@@ -1,13 +1,13 @@
 
 substitutions:
-  tibber_refresh_interval: "5min"
+  tibber_refresh_interval: "1min"
   tibber_auth_token: "Tibber Token"
-  tibber_auth_token_value: "eyYourtibberAuthToken"
+  tibber_auth_token_value: "eyYourtibberAuthTokenReplaceMe"
   tibber_json_response: "Tibber Json Antwort"
   tibber_lowest_price: "Tibber niedrigester Preis"
   tibber_lowest_hour: "Tibber niedrigste Stunde"
   tibber_prices: "Tibber Preise"
-  tibber_price_loading: "Tibber preise werden geladen.."
+  tibber_price_loading: "Tibber Preise werden geladen.."
   tibber_price_tomorrow_note: "Preise für morgen ab 13 Uhr.."
   today: "heute"
   tomorrow: "morgen"

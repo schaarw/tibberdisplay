@@ -4,8 +4,8 @@ esphome:
 
 
 packages:
-#  strings: !include strings_en.yaml 
-  strings: !include strings_de.yaml  # German
+  strings: !include strings_en.yaml 
+# strings: !include strings_de.yaml  # German
   
 wifi:
   ssid: !secret wifi_ssid
@@ -157,6 +157,9 @@ display:
      #include "esphome/core/log.h"
      it.fill( Color::BLACK);
 
+     // ----------------------------------------------------------
+     // Loading information 
+     // ----------------------------------------------------------
      if ( id(data_loaded_today)==0 ) {
       it.printf(10, 5, id(font_small),  Color::WHITE,
                "${tibber_price_loading}");
@@ -164,21 +167,20 @@ display:
      }
 
      if (id(current_page) == 1){
-       if ( id(data_loaded_tomorrow)==0 ) {
+       // no prices laoded, show note and exit drawing
+       if (id(data_loaded_tomorrow)==0 ) {
        it.printf(10, 5, id(font_small),  Color::WHITE,
                "${tibber_price_tomorrow_note}");
                return;               
        }
      }
      // HEADER
-     it.printf(10, 5, id(font_small),  Color::WHITE,
+     it.printf(10, 1, id(font_small),  Color::WHITE,
                "${tibber_prices} – %s",
-               id(current_page) == 0 ? "${today}" : "${tomorrow}");
+               id(current_page) == 0 ? "${today} (${unit})" : "${tomorrow} (${unit})");
 
-     // Prices today / tomorrow
+     // Calculate todays & tomorrows max / min price
      auto &prices = id(current_page) == 0 ? id(prices_today)  : id(prices_tomorrow);
-
-     // Min / Max 
      float min_price = 9999;
      float max_price = -9999;
      float sum = 0;
@@ -190,13 +192,11 @@ display:
        if (price > max_price) max_price = price;
      }
 
-     float avg = sum / 24.0;
-
      // layout
      int chart_x = 10;
-     int chart_y = 40;
+     int chart_y = 20;
      int chart_w = 300;
-     int chart_h = 160;
+     int chart_h = 180;
      it.rectangle(chart_x-2, chart_y-2, chart_w+4, chart_h+4, Color::WHITE);
    
       
@@ -210,15 +210,14 @@ display:
      #define CHEAPEST_LIMIT ${cheapest_limit}      
      
      for (int i = 0; i < 24; i++) {
-       float hour_price = prices[i];
-       float norm =   (hour_price - min_price) / (max_price - min_price);          
-       uint8_t r;
-       uint8_t g;
-       uint8_t b;
-
-
+      float hour_price = prices[i];
+      float norm =   (hour_price - min_price) / (max_price - min_price);          
+      uint8_t r;
+      uint8_t g;
+      uint8_t b;
       float hr_price = hour_price;
-      if( hr_price < 0.25) {
+      
+      if( hr_price < CHEAPEST_LIMIT) {
         // light green (128,255,0) to green (0,255,0)        
           float ratio_green = (float)hr_price/CHEAPEST_LIMIT;
           r = 128 * (1 - ratio_green);   // 128..to 0
@@ -230,8 +229,7 @@ display:
           r = 255 * red_ratio;          // red 0..255
           g = 255 * (1 - red_ratio);    // 255..0
           b = 0;
-        }
-  
+        }  
        Color bar_color = Color(r, g, 0); 
 
        int bar_x = chart_x + i * bar_w;
@@ -253,29 +251,27 @@ display:
 
      }
 
+     // ----------------------------------------------------------
+     // FOOTER
+     // ----------------------------------------------------------
      float nowprice = id(current_page) == 0 ? id(prices_today)[hour] : id(prices_tomorrow)[hour];
-  
      it.printf(10, 200, id(font_small), Color::WHITE , "0");
      it.printf(80, 200, id(font_small), Color::WHITE , "6");
      it.printf(150, 200, id(font_small), Color::WHITE , "12");
      it.printf(220, 200, id(font_small), Color::WHITE , "18");
      it.printf(290, 200, id(font_small), Color::WHITE , "24");
-     
+     it.printf(10, 220, id(font_small), Color::WHITE , "%.2f ${current}, %.2f ${min} (%d ${hour}), %.2f ${max}", nowprice, lowestprice, lowesthour,max_price);
 
-     it.printf(10, 220, id(font_small), Color::WHITE , "${unit}: %.2f ${current}, %.2f ${min} (%d ${hour})", nowprice, lowestprice, lowesthour);
-     it.printf(10, 5, id(font_small),  Color::WHITE,
-               "${tibber_prices} – %s",
-               id(current_page) == 0 ? "${today}" : "${tomorrow}");
-
-     // lowest price for time 
+     // Draw dotted lowest price line in green
+     Color green = Color(0, 255, 0);  
      int x_lowest = chart_x + (lowesthour*bar_w)  ;    
-     for (int y = chart_y; y < chart_y + (chart_w-40) ; y += 10) {
-       it.line(x_lowest  , y, x_lowest  , y+5, Color::WHITE);
+     for (int y = chart_y; y < chart_y + (chart_h-5) ; y += 10) {
+       it.line(x_lowest  , y, x_lowest  , y+5, green);
      } 
      if (x_lowest > 220){
       x_lowest = 220; // out of display protection
      }       
-     it.printf(chart_x + x_lowest- 10 , 40, id(font_small), Color::WHITE , " %.2f (%d ${hour})", lowestprice, lowesthour);
+     it.printf(chart_x + x_lowest- 10 , 40, id(font_small), green , " %.2f (%d ${hour})", lowestprice, lowesthour);
 
      id(tibberLowestHour) =  lowesthour;
      id(tibberLowestPrice) = lowestprice;
@@ -347,7 +343,7 @@ globals:
   - id: tibber_auth_token
     type: std::string
     restore_value: yes
-    initial_value: ${tibber_auth_token_value}    
+    initial_value: "\"${tibber_auth_token_value}\""
 
 http_request:
   verify_ssl: false
