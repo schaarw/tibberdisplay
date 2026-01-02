@@ -3,9 +3,9 @@ Displays todays & tomorrows tibber prices in a Cheap Yellow Display (CYD) that c
 
 # Prerequesites
 
-* Get the CYD [ CYD ESP32 Bruce 2432S028 ] from https://de.aliexpress.com/
+* Get the CYD ` CYD ESP32 Bruce 2432S028 ` from https://de.aliexpress.com/. This item looks like: https://docs.cirkitdesigner.com/component/e8590155-0e13-4645-976a-66c295cfca3b/esp32-2432s028 
 
-* Get a Tibber Account: https://tibber.com and note down your personal tibber token 
+* Get a Tibber Account: https://tibber.com and from the deveoper / api space, note down your personal tibber token. 
    
 * Set up esphome https://esphome.io/ 
 
@@ -22,12 +22,14 @@ Displays todays & tomorrows tibber prices in a Cheap Yellow Display (CYD) that c
 
 ## Configuration 
 
-* Edit `secrets.yaml` with your wifi credentials. It should look like this: 
+* Edit `secrets_example.yaml` with your wifi credentials and rename it to `secrets.yaml`. It should look like this: 
 
     ```
     wifi_ssid: "ReplacemeWifi"
     wifi_password: "SecretPassword123"
-    ```
+    ```    
+    Please set the credentials of your wifi router to connect the CYD to it.
+
 
 * Edit `tibberdisplay.yaml` search for for `strings` and switch to german if you like to change the language and currency. 
 
@@ -61,4 +63,4 @@ The web ui also displays the Json Response in the field Tibber Json Response to 
 ## Refresh time
 
 
-The refresh time is set to 5 minutes and can be configured in the project. 
+The refresh time is set to 5 minutes and can be configured in `strings_en.yml`. 
