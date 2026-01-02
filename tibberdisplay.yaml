@@ -4,8 +4,8 @@ esphome:
 
 
 packages:
-  strings: !include strings_en.yaml 
-#  strings: !include strings_dn.yaml  # German
+#  strings: !include strings_en.yaml 
+  strings: !include strings_de.yaml  # German
   
 wifi:
   ssid: !secret wifi_ssid
@@ -207,7 +207,7 @@ display:
      int hour = id(sntp_time).now().hour;
      float lowestprice = 9999;
      uint8_t lowesthour=0;
-     #define CHEAPEST_LIMIT 0.25      
+     #define CHEAPEST_LIMIT ${cheapest_limit}      
      
      for (int i = 0; i < 24; i++) {
        float hour_price = prices[i];
@@ -219,16 +219,16 @@ display:
 
       float hr_price = hour_price;
       if( hr_price < 0.25) {
-      // Hellgrün (128,255,0) zu Grün (0,255,0)        
+        // light green (128,255,0) to green (0,255,0)        
           float ratio_green = (float)hr_price/CHEAPEST_LIMIT;
-          r = 128 * (1 - ratio_green);   // Von 128 nach 0
+          r = 128 * (1 - ratio_green);   // 128..to 0
           g = 255;
           b = 0;
         } else {
-          // Grün (0,255,0) zu Rot (255,0,0)                   
+          // green (0,255,0) to red (255,0,0)                   
           float red_ratio = (float)(hr_price-CHEAPEST_LIMIT)/ (max_price - CHEAPEST_LIMIT); 
-          r = 255 * red_ratio;          // Von 0 nach 255
-          g = 255 * (1 - red_ratio);    // Von 255 nach 0
+          r = 255 * red_ratio;          // red 0..255
+          g = 255 * (1 - red_ratio);    // 255..0
           b = 0;
         }
   
@@ -254,7 +254,7 @@ display:
      }
 
      float nowprice = id(current_page) == 0 ? id(prices_today)[hour] : id(prices_tomorrow)[hour];
-   
+  
      it.printf(10, 200, id(font_small), Color::WHITE , "0");
      it.printf(80, 200, id(font_small), Color::WHITE , "6");
      it.printf(150, 200, id(font_small), Color::WHITE , "12");
@@ -307,7 +307,7 @@ touchscreen:
         ESP_LOGD("####", "### Position X %d ", currentPage);
          
     
-# ----------------------------------------------------------
+#--------------------------------------------------------
 # Globals
 # ----------------------------------------------------------
 globals:
@@ -347,7 +347,7 @@ globals:
   - id: tibber_auth_token
     type: std::string
     restore_value: yes
-    initial_value: "\"\""    
+    initial_value: ${tibber_auth_token_value}    
 
 http_request:
   verify_ssl: false
