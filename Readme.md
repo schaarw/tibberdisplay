@@ -4,12 +4,15 @@ Displays todays & tomorrows tibber prices in a Cheap Yellow Display (CYD) that c
 ## Images 
 
 * Todays view: 
+  
 ![Todays Diagram](images/today.jpeg)
 
-* Todays view (Localized German): 
+* Todays view (Localized German):
+   
 ![Todays Diagram](images/today_de.jpeg)
 
 * Tomorrow (beeing loaded from 1pm) 
+
 ![Todays Diagram](images/tomorrow.jpeg)
 
 ## Features
