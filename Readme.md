@@ -61,10 +61,18 @@ Displays todays & tomorrows tibber prices in a Cheap Yellow Display (CYD) that c
 
 * (*optional*) Within this cloned github repository, you can do a `esphome compile tibberdisplay.yaml` to just compile the application. If this works, do the next step to verify all is set up.
 
-* Within this cloned github repository, do a `esphome run tibberdisplay.yaml --device=<<IP of you device>>` to build & deploy the tibber application onto your device.
+## USB Cable
+
+* Within this cloned github repository, do a `esphome run tibberdisplay.yaml --device=/dev/cu.SLAB_USBtoUART` to build & deploy the tibber application onto your device via USB to serial connection. This device name differes between unix, mac and windows.
+
+## OTA (over the air update)
+* Also, if you do a `esphome run tibberdisplay.yaml --device=<<IP of you device>>` to build & deploy the tibber application onto your device via over-the air.
 
 
 # Testing & Debugging 
+
+## ESP Home Cli
+More infos about the ESPHome CLI: https://esphome.io/guides/cli/
 
 ## Testing your Tibber Token in the console :
 The token is a Header Parameter that is used in the Authorization HTTP Header.
@@ -84,7 +92,10 @@ This should return HTTP 200 valid json.
 
 The web ui also displays the Json Response in the field Tibber Json Response to watch what the CYD got responded. There should be a valid json in it.
 
-
 ## Refresh time
 
 The refresh time is set to 5 minutes and can be configured in `strings_en.yml`. 
+
+# Support me 
+
+Support me: https://ko-fi.com/zerwuff
