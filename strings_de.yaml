@@ -1,0 +1,18 @@
+
+substitutions:
+  tibber_refresh_interval: "5min"
+  tibber_auth_token: "Tibber Authentication Token"
+  tibber_json_response: "Tibber Json response"
+  tibber_lowest_price: "Tibber lowest price"
+  tibber_lowest_hour: "Tibber lowest hour"
+  tibber_prices: "Tibber prices"
+  tibber_price_loading: "Tibber prices are beeing loaded.."
+  tibber_price_tomorrow_note: "Tomorrows prices avaiable from 1 pm.."
+  today: "today"
+  tomorrow: "tomorrow"
+  unit: "ct/kWh"
+  current: "current"
+  min: "min"
+  max: "max"
+  hour: "hr"
+  

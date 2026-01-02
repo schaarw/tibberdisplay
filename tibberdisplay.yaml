@@ -1,0 +1,422 @@
+esphome:
+  name: tibberdisplay
+  friendly_name: Tibber Prices CYD 
+
+
+packages:
+  strings: !include strings_en.yaml 
+#  strings: !include strings_dn.yaml  # German
+  
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+web_server:
+  port: 80
+
+text:
+  - platform: template
+    mode: TEXT 
+    name: "${tibber_auth_token}"
+    set_action:
+      - lambda: |-
+          id(tibber_auth_token) = x;
+    lambda: |-
+      return id(tibber_auth_token);
+
+  - platform: template
+    mode: TEXT 
+    name: "${tibber_json_response}"
+    set_action:
+      - lambda: |-
+          return ;
+    lambda: |-
+      return id(json_buffer);
+
+
+number:
+  - platform: template
+    name: "${tibber_lowest_price}"
+    mode: AUTO
+    min_value: 0
+    step: 0.01
+    max_value: 1
+    set_action:
+      - lambda: |-
+          return ;
+    lambda: |-
+      return id(tibberLowestPrice);
+    update_interval: 5min
+
+  - platform: template
+    name: "${tibber_lowest_hour}"
+    mode: AUTO
+    min_value: 0
+    step: 1
+    max_value: 23
+    set_action:
+      - lambda: |-
+          return ;
+    lambda: |-
+      return id(tibberLowestHour);
+    update_interval: 5min
+
+esp32:
+  board: esp32dev
+  framework:
+    sdkconfig_options:
+      CONFIG_ESP_TASK_WDT: y
+      CONFIG_ESP_TASK_WDT_TIMEOUT_S: "25"
+    type: esp-idf
+    version: dev
+
+external_components:
+  - source: github://esphome/esphome#pr5602
+    components: [ili9xxx]
+    refresh: 10d
+  - source: github://hlfcode/esphome@f8324b793040cdd6308db176c04f80777932398d
+    components: [ http_request ]
+    refresh: 0s
+json:
+
+text_sensor:
+  - platform: debug
+    device:
+      name: "Device Info"
+    reset_reason:
+      name: "Reset Reason"
+
+sensor:
+  - platform: debug
+    free:
+      name: "Heap Free"
+    block:
+      name: "Heap Max Block"
+    loop_time:
+      name: "Loop Time"
+    cpu_frequency:
+      name: "CPU Frequency"
+debug:
+  update_interval: 5s
+
+ota:
+  platform: esphome
+time:
+  - platform: sntp
+    id: sntp_time
+ 
+            
+
+# ----------------------------------------------------------
+# SPI + Display ILI9341
+# ----------------------------------------------------------
+
+spi:
+  - id: tft
+    clk_pin: GPIO14
+    mosi_pin: GPIO13
+    miso_pin: GPIO12
+  - id: touch
+    clk_pin: GPIO25
+    mosi_pin: GPIO32
+    miso_pin: GPIO39
+
+output:
+  - platform: ledc
+    pin: GPIO21
+    id: backlight_pwm
+
+light:
+  - platform: monochromatic
+    name: "PWM Light"
+    output: backlight_pwm
+    default_transition_length: 0s
+    gamma_correct: 1.0
+    restore_mode: ALWAYS_ON  
+    id: pwm_light
+
+logger:
+  level: DEBUG
+
+
+display:
+  - platform: ili9xxx
+    spi_id: tft
+    id: my_display
+    model: ili9341       
+    color_palette: 8BIT  
+    cs_pin: GPIO15
+    dc_pin: GPIO2
+    rotation: 90
+    invert_colors: false 
+    update_interval: 5min
+    data_rate: 80MHz
+    color_order: bgr         
+
+    lambda: |-
+     #include "esphome/core/log.h"
+     it.fill( Color::BLACK);
+
+     if ( id(data_loaded_today)==0 ) {
+      it.printf(10, 5, id(font_small),  Color::WHITE,
+               "${tibber_price_loading}");
+               return;               
+     }
+
+     if (id(current_page) == 1){
+       if ( id(data_loaded_tomorrow)==0 ) {
+       it.printf(10, 5, id(font_small),  Color::WHITE,
+               "${tibber_price_tomorrow_note}");
+               return;               
+       }
+     }
+     // HEADER
+     it.printf(10, 5, id(font_small),  Color::WHITE,
+               "${tibber_prices} – %s",
+               id(current_page) == 0 ? "${today}" : "${tomorrow}");
+
+     // Prices today / tomorrow
+     auto &prices = id(current_page) == 0 ? id(prices_today)  : id(prices_tomorrow);
+
+     // Min / Max 
+     float min_price = 9999;
+     float max_price = -9999;
+     float sum = 0;
+     
+     for (int i = 0; i < 24; i++) {
+       float price = prices[i];
+       sum += price;
+       if (price < min_price) min_price = price;
+       if (price > max_price) max_price = price;
+     }
+
+     float avg = sum / 24.0;
+
+     // layout
+     int chart_x = 10;
+     int chart_y = 40;
+     int chart_w = 300;
+     int chart_h = 160;
+     it.rectangle(chart_x-2, chart_y-2, chart_w+4, chart_h+4, Color::WHITE);
+   
+      
+     // ----------------------------------------------------------
+     // Bars & colors 
+     // ----------------------------------------------------------
+     int bar_w = chart_w / 24;
+     int hour = id(sntp_time).now().hour;
+     float lowestprice = 9999;
+     uint8_t lowesthour=0;
+     #define CHEAPEST_LIMIT 0.25      
+     
+     for (int i = 0; i < 24; i++) {
+       float hour_price = prices[i];
+       float norm =   (hour_price - min_price) / (max_price - min_price);          
+       uint8_t r;
+       uint8_t g;
+       uint8_t b;
+
+
+      float hr_price = hour_price;
+      if( hr_price < 0.25) {
+      // Hellgrün (128,255,0) zu Grün (0,255,0)        
+          float ratio_green = (float)hr_price/CHEAPEST_LIMIT;
+          r = 128 * (1 - ratio_green);   // Von 128 nach 0
+          g = 255;
+          b = 0;
+        } else {
+          // Grün (0,255,0) zu Rot (255,0,0)                   
+          float red_ratio = (float)(hr_price-CHEAPEST_LIMIT)/ (max_price - CHEAPEST_LIMIT); 
+          r = 255 * red_ratio;          // Von 0 nach 255
+          g = 255 * (1 - red_ratio);    // Von 255 nach 0
+          b = 0;
+        }
+  
+       Color bar_color = Color(r, g, 0); 
+
+       int bar_x = chart_x + i * bar_w;
+       int bar_h = (int)(norm * chart_h);      
+       if (bar_h < 320  ){
+         it.filled_rectangle(
+                       bar_x,
+                       chart_y + chart_h - bar_h,
+                       bar_w - 2,
+                       bar_h,
+                       bar_color);
+
+       }
+     
+      if (hour_price < lowestprice){
+         lowestprice = hour_price;
+         lowesthour = i;
+      }
+
+     }
+
+     float nowprice = id(current_page) == 0 ? id(prices_today)[hour] : id(prices_tomorrow)[hour];
+   
+     it.printf(10, 200, id(font_small), Color::WHITE , "0");
+     it.printf(80, 200, id(font_small), Color::WHITE , "6");
+     it.printf(150, 200, id(font_small), Color::WHITE , "12");
+     it.printf(220, 200, id(font_small), Color::WHITE , "18");
+     it.printf(290, 200, id(font_small), Color::WHITE , "24");
+     
+
+     it.printf(10, 220, id(font_small), Color::WHITE , "${unit}: %.2f ${current}, %.2f ${min} (%d ${hour})", nowprice, lowestprice, lowesthour);
+     it.printf(10, 5, id(font_small),  Color::WHITE,
+               "${tibber_prices} – %s",
+               id(current_page) == 0 ? "${today}" : "${tomorrow}");
+
+     // lowest price for time 
+     int x_lowest = chart_x + (lowesthour*bar_w)  ;    
+     for (int y = chart_y; y < chart_y + (chart_w-40) ; y += 10) {
+       it.line(x_lowest  , y, x_lowest  , y+5, Color::WHITE);
+     } 
+     if (x_lowest > 220){
+      x_lowest = 220; // out of display protection
+     }       
+     it.printf(chart_x + x_lowest- 10 , 40, id(font_small), Color::WHITE , " %.2f (%d ${hour})", lowestprice, lowesthour);
+
+     id(tibberLowestHour) =  lowesthour;
+     id(tibberLowestPrice) = lowestprice;
+   
+
+# ----------------------------------------------------------
+# TOUCHSCREEN 
+# ----------------------------------------------------------
+
+touchscreen:
+ platform: xpt2046
+ spi_id: touch
+ cs_pin: 4
+ interrupt_pin: 36
+ update_interval: 20ms
+ id: touchpanel
+ calibration:
+    x_min: 200
+    x_max: 3900
+    y_min: 200
+    y_max: 3900
+ on_touch:
+   then:
+     - lambda: |-
+        #include "esphome/core/log.h"
+        id(current_page) =  id(current_page) == 0 ? 1:0;
+        id(my_display).update();
+        int currentPage = id(current_page);
+        ESP_LOGD("####", "### Position X %d ", currentPage);
+         
+    
+# ----------------------------------------------------------
+# Globals
+# ----------------------------------------------------------
+globals:
+  - id: current_page
+    type: int
+    initial_value: '0'
+
+  - id: data_loaded_today
+    type: int
+    initial_value: '0'
+
+  - id: data_loaded_tomorrow
+    type: int
+    initial_value: '0'
+
+  - id: prices_today
+    type: float[24]
+    restore_value: no
+
+  - id: prices_tomorrow
+    type: float[24]
+    restore_value: no
+  
+  - id: tibberLowestPrice
+    type: float
+    restore_value: no
+
+  - id: tibberLowestHour
+    type: int
+    restore_value: no
+
+  - id: json_buffer
+    type: std::string
+    restore_value: no
+    initial_value: "\"\""  
+
+  - id: tibber_auth_token
+    type: std::string
+    restore_value: yes
+    initial_value: "\"\""    
+
+http_request:
+  verify_ssl: false
+  watchdog_timeout: 30s
+  timeout: 30s 
+  buffer_size_rx: 8192
+  buffer_size_tx: 512
+
+
+
+# ----------------------------------------------------------
+# TIBBER API 
+# ----------------------------------------------------------
+interval:
+
+  - interval: 15min
+    then:
+      - lambda: |-
+          id(current_page)=0; // safely set the first page 
+
+  - interval: ${tibber_refresh_interval}
+    startup_delay: 0 sec
+    then:
+      - http_request.post:          
+          url: https://api.tibber.com/v1-beta/gql
+          request_headers:           
+            Authorization: !lambda |-
+               static char header_buff[128];  
+               snprintf(header_buff, sizeof(header_buff), "Bearer %s", id(tibber_auth_token).c_str());          
+               return header_buff;
+            Content-Type: application/json
+          capture_response: true
+          max_response_buffer_size: 8096          
+          body: |-
+            {"query":"{ viewer { homes { currentSubscription { priceInfo { today { startsAt total energy tax } tomorrow { startsAt total energy tax } } } } } }"}       
+          on_response:
+            then:
+              - lambda: |-
+                 #include "esphome/core/log.h"
+                 id(data_loaded_today)=0;
+                 id(data_loaded_tomorrow)=0;
+                 id(json_buffer) = body.c_str(); 
+                 ESP_LOGD("tibber", "RAW RESPONSE:\n %s", body.c_str());
+                 json::parse_json(body, [](JsonObject root) -> bool {
+                 auto today = root["data"]["viewer"]["homes"][0]["currentSubscription"]["priceInfo"]["today"];                
+                 auto tmr   = root["data"]["viewer"]["homes"][0]["currentSubscription"]["priceInfo"]["tomorrow"];                
+                 for (int i = 0; i < 24; i++) {
+                    id(prices_today)[i] = today[i]["total"].as<float>();
+                    if (sizeof(tmr)>22 ){
+                      id(data_loaded_tomorrow)=1; 
+                      id(prices_tomorrow)[i] = tmr[i]["total"].as<float>();                
+                    }
+                  }
+                  if (sizeof(today)>22 ){
+                      id(data_loaded_today)=1; 
+                   }
+                  ESP_LOGI("tibber", "Prices collected today :\n %d", sizeof(today) ) ;
+                  ESP_LOGI("tibber", "Prices collected tomorrow :\n %d", sizeof(tmr) ) ;                                 
+                  id(my_display).update();                  
+                  return true;
+                 });
+
+          on_error:
+            then:
+              - logger.log: "Request to Tibber Failed!"
+# ----------------------------------------------------------
+# FONTS
+# ----------------------------------------------------------
+font:
+  - file: "fonts/Roboto-Regular.ttf"
+    id: font_small
+    size: 16
