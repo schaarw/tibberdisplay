@@ -11,7 +11,7 @@ substitutions:
   tibber_price_tomorrow_note: "Tomorrows prices avaiable from 1 pm.."
   today: "today"
   tomorrow: "tomorrow"
-  unit: "ct/kWh"
+  unit: "€/kWh"
   current: "current"
   min: "min"
   max: "max"

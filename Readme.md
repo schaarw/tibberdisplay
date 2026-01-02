@@ -3,28 +3,31 @@ Displays todays & tomorrows tibber prices in a Cheap Yellow Display (CYD) that c
 
 ## Images 
 
-* Todays view: 
+* Todays view with lowest price 0,17 eur at 3 am (dotted line): 
   
 ![Todays Diagram](images/today.jpeg)
 
-* Todays view (Localized German):
+* Todays view, with same data, but localized - German language:
    
-![Todays Diagram](images/today_de.jpeg)
+![Todays Diagram, German localized](images/today_de.jpeg)
 
-* Tomorrow (beeing loaded from 1pm) 
+* By touching the display - showing tomorrows price, lowest price 0,26 € at 4 am (dotted line)
 
-![Todays Diagram](images/tomorrow.jpeg)
+![Tomorows Diagram](images/tomorrow.jpeg)
 
 ## Features
 
 * Displays Tibber prices for today & tomorrow in a bar char
+* Coloring: 0..25 ct: green, above: red scale 
+* Touch to switch between todays & tomorrows prices 
+* Shows cheapest price with line indicator and hour of day
 * Supports Web Interface
-* Supports Update via OTA 
+* Supports Update of newer versions via OTA 
 * Supports I18n (DE/EN) 
   
 # Prerequesites
 
-* Get the CYD ` CYD ESP32 Bruce 2432S028 ` from https://de.aliexpress.com/. This item looks like: https://docs.cirkitdesigner.com/component/e8590155-0e13-4645-976a-66c295cfca3b/esp32-2432s028 
+* Get the Cheap Yellow Display (2,8 inch with touchscreen, usb c + micro usb connector) from [Aliexpress](https://s.click.aliexpress.com/e/_c3Roj6sL) 
 
 * Get a Tibber Account: https://tibber.com and from the deveoper / api space, note down your personal tibber token. 
    
@@ -34,6 +37,7 @@ Displays todays & tomorrows tibber prices in a Cheap Yellow Display (CYD) that c
 
 * Now, power on the CYD, check the IP address on your wifi router. Note this IP.
 
+* The type of the CYD is(`CYD ESP32 Bruce 2432S028`
 
 
 # Configuration 
