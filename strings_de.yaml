@@ -2,7 +2,6 @@
 substitutions:
   tibber_refresh_interval: "1min"
   tibber_auth_token: "Tibber Token"
-  tibber_auth_token_value: "eyYourtibberAuthTokenReplaceMe"
   tibber_json_response: "Tibber Json Antwort"
   tibber_lowest_price: "Tibber niedrigester Preis"
   tibber_lowest_hour: "Tibber niedrigste Stunde"

@@ -2,6 +2,8 @@ esphome:
   name: tibberdisplay
   friendly_name: Tibber Prices CYD 
 
+substitutions:
+  tibber_token: !secret tibber_auth_token_value
 
 packages:
   strings: !include strings_en.yaml 
@@ -68,15 +70,7 @@ esp32:
       CONFIG_ESP_TASK_WDT: y
       CONFIG_ESP_TASK_WDT_TIMEOUT_S: "25"
     type: esp-idf
-    version: dev
 
-external_components:
-  - source: github://esphome/esphome#pr5602
-    components: [ili9xxx]
-    refresh: 10d
-  - source: github://hlfcode/esphome@f8324b793040cdd6308db176c04f80777932398d
-    components: [ http_request ]
-    refresh: 0s
 json:
 
 text_sensor:
@@ -138,20 +132,15 @@ light:
 logger:
   level: DEBUG
 
-
 display:
-  - platform: ili9xxx
+  - platform: mipi_spi
+    model: ESP32-2432S028
     spi_id: tft
-    id: my_display
-    model: ili9341       
-    color_palette: 8BIT  
-    cs_pin: GPIO15
     dc_pin: GPIO2
-    rotation: 90
-    invert_colors: false 
-    update_interval: 5min
-    data_rate: 80MHz
-    color_order: bgr         
+    cs_pin: GPIO15
+    id: my_display
+    color_depth: 8
+    rotation: 90 
 
     lambda: |-
      #include "esphome/core/log.h"
@@ -282,25 +271,25 @@ display:
 # ----------------------------------------------------------
 
 touchscreen:
- platform: xpt2046
- spi_id: touch
- cs_pin: 4
- interrupt_pin: 36
- update_interval: 20ms
- id: touchpanel
- calibration:
-    x_min: 200
-    x_max: 3900
-    y_min: 200
-    y_max: 3900
- on_touch:
-   then:
-     - lambda: |-
-        #include "esphome/core/log.h"
-        id(current_page) =  id(current_page) == 0 ? 1:0;
-        id(my_display).update();
-        int currentPage = id(current_page);
-        ESP_LOGD("####", "### Position X %d ", currentPage);
+  platform: xpt2046
+  spi_id: touch
+  cs_pin: GPIO33
+  interrupt_pin: GPIO36
+  calibration:
+    x_min: 125
+    x_max: 4039
+    y_min: 340
+    y_max: 3860
+  update_interval: 20ms
+  id: touchpanel
+  on_touch:
+    then:
+      - lambda: |-
+          #include "esphome/core/log.h"
+          id(current_page) =  id(current_page) == 0 ? 1:0;
+          id(my_display).update();
+          int currentPage = id(current_page);
+          ESP_LOGD("####", "### Position X %d ", currentPage);
          
     
 #--------------------------------------------------------
@@ -343,7 +332,7 @@ globals:
   - id: tibber_auth_token
     type: std::string
     restore_value: yes
-    initial_value: "\"${tibber_auth_token_value}\""
+    initial_value: '"${tibber_token}"'
 
 http_request:
   verify_ssl: false
