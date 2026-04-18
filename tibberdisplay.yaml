@@ -2,6 +2,9 @@ esphome:
   name: tibberdisplay
   friendly_name: Tibber Prices CYD 
 
+api:
+
+
 substitutions:
   tibber_token: !secret tibber_auth_token_value
 
@@ -95,6 +98,7 @@ debug:
 
 ota:
   platform: esphome
+  password: !secret ota_password
 time:
   - platform: sntp
     id: sntp_time
@@ -119,6 +123,7 @@ output:
   - platform: ledc
     pin: GPIO21
     id: backlight_pwm
+    frequency: 1000Hz
 
 light:
   - platform: monochromatic
@@ -141,6 +146,7 @@ display:
     id: my_display
     color_depth: 8
     rotation: 90 
+    data_rate: 20MHz
 
     lambda: |-
      #include "esphome/core/log.h"
@@ -252,19 +258,32 @@ display:
      it.printf(10, 220, id(font_small), Color::WHITE , "%.2f ${current}, %.2f ${min} (%d ${hour}), %.2f ${max}", nowprice, lowestprice, lowesthour,max_price);
 
      // Draw dotted lowest price line in green
-     Color green = Color(0, 255, 0);  
-     int x_lowest = chart_x + (lowesthour*bar_w)  ;    
-     for (int y = chart_y; y < chart_y + (chart_h-5) ; y += 10) {
-       it.line(x_lowest  , y, x_lowest  , y+5, green);
-     } 
-     if (x_lowest > 220){
-      x_lowest = 220; // out of display protection
-     }       
-     it.printf(chart_x + x_lowest- 10 , 40, id(font_small), green , " %.2f (%d ${hour})", lowestprice, lowesthour);
-
+     // Color green = Color(0, 255, 0);  
+     // int x_lowest = chart_x + (lowesthour*bar_w)  ;    
+     // for (int y = chart_y; y < chart_y + (chart_h-5) ; y += 10) {
+     //  it.line(x_lowest  , y, x_lowest  , y+5, green);
+     // } 
+     // if (x_lowest > 220){
+     // x_lowest = 220; // out of display protection
+     // }       
+     // it.printf(chart_x + x_lowest- 10 , 40, id(font_small), green , " %.2f (%d ${hour})", lowestprice, lowesthour);
+    
      id(tibberLowestHour) =  lowesthour;
      id(tibberLowestPrice) = lowestprice;
-   
+    
+      // Draw dotted current hour line in green
+      Color green = Color(0, 255, 0);
+      auto now = id(sntp_time).now();
+      int current_hour = now.hour;
+      int x_current = chart_x + (current_hour * bar_w);
+      for (int y = chart_y; y < chart_y + (chart_h - 5); y += 10) {
+        it.line(x_current, y, x_current, y + 5, green);
+      }
+      if (x_current > 220) {
+        x_current = 220; // out of display protection
+      }
+      it.printf(chart_x + x_current - 10, 40, id(font_small), green, " %d:00", current_hour);
+
 
 # ----------------------------------------------------------
 # TOUCHSCREEN 
