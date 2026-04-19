@@ -99,9 +99,11 @@ debug:
 ota:
   platform: esphome
   password: !secret ota_password
+
 time:
   - platform: sntp
     id: sntp_time
+    timezone: Europe/Berlin
  
             
 
@@ -139,14 +141,14 @@ logger:
 
 display:
   - platform: mipi_spi
-    model: ESP32-2432S028
+    model: ILI9341
     spi_id: tft
     dc_pin: GPIO2
     cs_pin: GPIO15
     id: my_display
     color_depth: 8
     rotation: 90 
-    data_rate: 20MHz
+    data_rate: 10MHz
 
     lambda: |-
      #include "esphome/core/log.h"
